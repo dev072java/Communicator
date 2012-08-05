@@ -7,80 +7,85 @@ import java.io.InputStreamReader;
 import java.io.OutputStreamWriter;
 import java.net.ServerSocket;
 import java.net.Socket;
-import java.util.concurrent.BlockingQueue;
-import java.util.concurrent.LinkedBlockingQueue;
 
 public class Communicator implements Runnable {
+
 	/**
-	 * serverSoket 
+	 * serverSoket
 	 */
 	private ServerSocket serverSoket;
+
 	/**
-	 *  serverThread
+	 * serverThread
 	 */
 	private Thread serverThread;
 	/**
 	 * taskQueue
 	 */
-	BlockingQueue<SocketProcessor> taskQueue = new LinkedBlockingQueue<SocketProcessor>();
+	private TaskQueue taskQueue;
+	private Thread queueThread;
 
 	/**
 	 * 
-	 * @param port - port of web server
+	 * @param port
+	 *            - port of web server
 	 * @throws IOException
 	 */
 	public Communicator(int port) throws IOException {
 		serverSoket = new ServerSocket(port);
+		taskQueue = new TaskQueue();
+		queueThread = new Thread(taskQueue);
+		queueThread.setDaemon(true);
+		queueThread.start();
+		System.out.println("Task queue started!");
 	}
+
 	/**
 	 * listen to new clients
 	 */
 	public void run() {
 		serverThread = Thread.currentThread();
+		Socket socket;
 		while (true) {
-			Socket socket = getNewConn();
-			if (serverThread.isInterrupted()) {
-				break;
-			} else if (socket != null) {
-				try {
-					final SocketProcessor processor = new SocketProcessor(socket);
-					final Thread thread = new Thread(processor);
-					thread.setDaemon(true);
-					thread.start();
-					taskQueue.offer(processor);
-				} catch (IOException ignored) {
+			try {
+				socket = serverSoket.accept();
+				if (serverThread.isInterrupted()) {
+					break;
+				} else if (socket != null) {
+					try {
+						final SocketProcessor processor = new SocketProcessor(
+								socket);
+						final Thread thread = new Thread(processor);
+						thread.setDaemon(true);
+						thread.start();
+						taskQueue.queue.add(processor);
+						System.out.println(taskQueue.queue.size());
+					} catch (IOException ignored) {
+					}
 				}
+			} catch (IOException e) {
+				shutdownServer();
 			}
+
 		}
 	}
+
 	/**
 	 * 
-	 * @return newSocket - socket of new client connection
+	 * @param client
+	 *            - client's socket
+	 * @param text
+	 *            - response text
 	 */
-	private Socket getNewConn() {
-		Socket newSocket = null;
-		try {
-			newSocket = serverSoket.accept();
-		} catch (IOException e) {
-			shutdownServer();
-		}
-		return newSocket;
-	}
-	
-	/**
-	 * 
-	 * @param client - client's socket
-	 * @param text - response text
-	 */
-	public void sendResponse(SocketProcessor client,String text) {
+	public void sendResponse(SocketProcessor client, String text) {
 		client.sendResponse(text);
 	}
-	
+
 	/**
-	 * stop web server work 
+	 * stop web server work
 	 */
 	public synchronized void shutdownServer() {
-		for (SocketProcessor socket : taskQueue) {
+		for (SocketProcessor socket : taskQueue.queue) {
 			socket.close();
 		}
 		if (!serverSoket.isClosed()) {
@@ -90,13 +95,17 @@ public class Communicator implements Runnable {
 			}
 		}
 	}
-	
+
 	/**
 	 * 
 	 * @author Oleh Halushchak
-	 *
+	 * 
 	 */
-	private class SocketProcessor implements Runnable {
+	public class SocketProcessor implements Runnable {
+		/**
+		 * true if all text of request is loader to server
+		 */
+		boolean isRequestTextLoader = false;
 		/**
 		 * socket
 		 */
@@ -112,63 +121,84 @@ public class Communicator implements Runnable {
 		/**
 		 * requestText
 		 */
-		@SuppressWarnings("unused")
 		String requestText = "";
+
 		/**
 		 * 
-		 * @param socketParam - client socket
+		 * @param socketParam
+		 *            - client socket
 		 * @throws IOException
 		 */
 		SocketProcessor(Socket socketParam) throws IOException {
 			socket = socketParam;
 			bufferReader = new BufferedReader(new InputStreamReader(
-					socket.getInputStream(), "UTF-8"));
+					socket.getInputStream()));
 			bufferWritter = new BufferedWriter(new OutputStreamWriter(
-					socket.getOutputStream(), "UTF-8"));
+					socket.getOutputStream()));
 		}
+
 		/**
 		 * listening to the new client's requests
 		 */
 		public void run() {
+			String temp = "";
 			while (!socket.isClosed()) {
-				String line = null;
+				String line = "";
 				try {
-					while (bufferReader.readLine() != null) {
-						line += bufferReader.readLine();
+					while (true) {
+						temp = bufferReader.readLine();
+						if (temp == null || temp.trim().length() == 0) {
+							break;
+						}
+						line += temp + "\n";
 					}
-					setRequestText(line);
-					System.out.print(line);
+					isRequestTextLoader = true;
+					if (line != "") {
+						setRequestText(line);
+						System.out.print(line + "\n" + "Request resived!\n");
+						line = "";
+					}
+					sendResponse("<html><body><h1>Hello World!!!</h1></body></html>");
 				} catch (IOException e) {
 					close();
 				}
 			}
 		}
+
 		/**
 		 * 
-		 * @param responseText - response text
+		 * @param responseText
+		 *            - response text
 		 */
 		public synchronized void sendResponse(String responseText) {
+			String response = "HTTP/1.1 200 OK\r\n"
+					+ "Server: YarServer/2009-09-09\r\n"
+					+ "Content-Type: text/html\r\n" + "Content-Length: "
+					+ responseText.length() + "\r\n"
+					+ "Connection: close\r\n\r\n";
+			String resault = response + responseText;
 			try {
-				bufferWritter.write(responseText);
+				bufferWritter.write(resault);
 				bufferWritter.flush();
 			} catch (IOException e) {
 				close();
 			}
 		}
-		
+
 		/**
 		 * 
-		 * @param text - request text
+		 * @param text
+		 *            - request text
 		 */
 		public void setRequestText(String text) {
 			requestText = text;
 		}
-		
+
 		/**
 		 * close current client connection
 		 */
 		public synchronized void close() {
-			taskQueue.remove(this);
+			taskQueue.queue.remove(this);
 			if (!socket.isClosed()) {
 				try {
 					socket.close();
@@ -178,4 +208,3 @@ public class Communicator implements Runnable {
 		}
 	}
 }
-
