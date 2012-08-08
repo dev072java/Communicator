@@ -1,15 +1,19 @@
 package com.softserveinc.edu.lms.webserver;
 
 import java.io.BufferedReader;
-import java.io.BufferedWriter;
 import java.io.IOException;
+import java.io.InputStream;
 import java.io.InputStreamReader;
-import java.io.OutputStreamWriter;
+import java.io.OutputStream;
 import java.net.ServerSocket;
 import java.net.Socket;
 
 public class Communicator implements Runnable {
 
+	/**
+	 * configurator
+	 */
+	Configurator configurator;
 	/**
 	 * serverSoket
 	 */
@@ -31,15 +35,15 @@ public class Communicator implements Runnable {
 	 *            - port of web server
 	 * @throws IOException
 	 */
-	public Communicator(int port) throws IOException {
-		serverSoket = new ServerSocket(port);
+	public Communicator() throws IOException {
+		Configurator configurator = new Configurator();
+		serverSoket = new ServerSocket(configurator.getPort());
 		taskQueue = new TaskQueue();
 		queueThread = new Thread(taskQueue);
 		queueThread.setDaemon(true);
 		queueThread.start();
 		System.out.println("Task queue started!");
 	}
-
 	/**
 	 * listen to new clients
 	 */
@@ -71,17 +75,6 @@ public class Communicator implements Runnable {
 	}
 
 	/**
-	 * 
-	 * @param client
-	 *            - client's socket
-	 * @param text
-	 *            - response text
-	 */
-	public void sendResponse(SocketProcessor client, String text) {
-		client.sendResponse(text);
-	}
-
-	/**
 	 * stop web server work
 	 */
 	public synchronized void shutdownServer() {
@@ -107,17 +100,17 @@ public class Communicator implements Runnable {
 		 */
 		boolean isRequestTextLoader = false;
 		/**
-		 * socket
+		 * socket -socket connection object
 		 */
 		Socket socket;
 		/**
-		 * bufferReader
+		 * inputStream
 		 */
-		BufferedReader bufferReader;
+		InputStream inputStream;
 		/**
-		 * bufferWriter
+		 * outputStream
 		 */
-		BufferedWriter bufferWritter;
+		OutputStream outputStream;
 		/**
 		 * requestText
 		 */
@@ -131,10 +124,8 @@ public class Communicator implements Runnable {
 		 */
 		SocketProcessor(Socket socketParam) throws IOException {
 			socket = socketParam;
-			bufferReader = new BufferedReader(new InputStreamReader(
-					socket.getInputStream()));
-			bufferWritter = new BufferedWriter(new OutputStreamWriter(
-					socket.getOutputStream()));
+			inputStream = socket.getInputStream();
+			outputStream = socket.getOutputStream();
 		}
 
 		/**
@@ -144,6 +135,7 @@ public class Communicator implements Runnable {
 			String temp = "";
 			while (!socket.isClosed()) {
 				String line = "";
+				BufferedReader bufferReader = new BufferedReader(new InputStreamReader(inputStream));
 				try {
 					while (true) {
 						temp = bufferReader.readLine();
@@ -158,7 +150,7 @@ public class Communicator implements Runnable {
 						System.out.print(line + "\n" + "Request resived!\n");
 						line = "";
 					}
-					sendResponse("<html><body><h1>Hello World!!!</h1></body></html>");
+					sendTestResponse("<html><body><h1>Hello World!!!</h1></body></html>");
 				} catch (IOException e) {
 					close();
 				}
@@ -170,19 +162,42 @@ public class Communicator implements Runnable {
 		 * @param responseText
 		 *            - response text
 		 */
-		public synchronized void sendResponse(String responseText) {
-			String response = "HTTP/1.1 200 OK\r\n"
-					+ "Server: YarServer/2009-09-09\r\n"
+		public synchronized void sendTestResponse(String responseText) {
+			/*String response = "HTTP/1.1 200 OK\r\n"
+					+ "Server: YarServer/2012-07-08\r\n"
 					+ "Content-Type: text/html\r\n" + "Content-Length: "
 					+ responseText.length() + "\r\n"
 					+ "Connection: close\r\n\r\n";
 			String resault = response + responseText;
 			try {
-				bufferWritter.write(resault);
-				bufferWritter.flush();
+				outputStream.write(resault.getBytes());
+				outputStream.flush();
 			} catch (IOException e) {
 				close();
+			}*/
+			try {
+				String str = "Hello";
+				outputStream.write(str.getBytes());
+				outputStream.flush();
+			} catch(IOException e)
+			{
+				close();
 			}
+		}
+		/**
+		 * 
+		 * @param response - object with response info
+		 */
+		public synchronized void sendResponse(Response response)
+		{
+			try {
+				outputStream.write(response.getBytes());
+				outputStream.flush();
+			} catch (IOException e) {
+				// TODO Auto-generated catch block
+				e.printStackTrace();
+			}
+			
 		}
 
 		/**

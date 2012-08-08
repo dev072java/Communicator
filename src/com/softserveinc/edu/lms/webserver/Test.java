@@ -11,7 +11,7 @@ public class Test {
 		// TODO Auto-generated method stub
 		try {
 			System.out.println("Communicator started!");
-			Communicator comm = new Communicator(8090);
+			Communicator comm = new Communicator();
 			comm.run();
 			//Thread communicatorThread = new Thread(comm);
 			//communicatorThread.setDaemon(true);

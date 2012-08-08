@@ -1,40 +1,40 @@
 package com.softserveinc.edu.lms.webserver;
 
-import java.io.IOException;
-import java.util.LinkedList;
-import java.util.List;
+import java.util.concurrent.LinkedBlockingQueue;
 import com.softserveinc.edu.lms.webserver.Communicator.SocketProcessor;
 
 public class TaskQueue implements Runnable {
-	List<SocketProcessor> queue;
+	LinkedBlockingQueue<SocketProcessor> queue;
 	public TaskQueue()
 	{
 		/**
 		 * taskQueue
 		 */
-		queue = new LinkedList<SocketProcessor>();
+		queue = new LinkedBlockingQueue<SocketProcessor>();
 	}
 	
-	public List<SocketProcessor> getTaskQueue()
+	public LinkedBlockingQueue<SocketProcessor> getTaskQueue()
 	{
 		return queue;
 	}
 
 	public void run() {
-		for(int i = 0; i < queue.size(); i++)
+		for(SocketProcessor socket : queue)
 		{
-			SocketProcessor socket = queue.get(i);
-			System.out.println(socket.hashCode() + "  " + socket.isRequestTextLoader);
 			if(socket.isRequestTextLoader)
 			{
-				try {
+				socket.isRequestTextLoader = false;
+				Handler handler = new Handler();
+				Response response = handler.handle (socket);
+				socket.sendTestResponse("<html><body><h1>Hello World!!!</h1></body></html>");
+				/*try {
 					socket.sendResponse("<html><body><h1>Hello World!!!</h1></body></html>");
 					socket.bufferWritter.flush();
 					System.out.print("Response sent!");
 				} catch (IOException e) {
 					// TODO Auto-generated catch block
 					e.printStackTrace();
-				}
+				}*/
 			}
 		}
 	}
