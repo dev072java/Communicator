@@ -27,6 +27,10 @@ public class Communicator implements Runnable {
 	 * taskQueue
 	 */
 	private TaskQueue taskQueue;
+	
+	/**
+	 * queueThread
+	 */
 	private Thread queueThread;
 
 	/**
@@ -63,7 +67,6 @@ public class Communicator implements Runnable {
 						thread.setDaemon(true);
 						thread.start();
 						taskQueue.queue.add(processor);
-						System.out.println(taskQueue.queue.size());
 					} catch (IOException ignored) {
 					}
 				}
@@ -95,26 +98,37 @@ public class Communicator implements Runnable {
 	 * 
 	 */
 	public class SocketProcessor implements Runnable {
+		
 		/**
 		 * true if all text of request is loader to server
 		 */
 		boolean isRequestTextLoader = false;
+		
 		/**
-		 * socket -socket connection object
+		 * socket - socket connection object
 		 */
 		Socket socket;
+		
 		/**
 		 * inputStream
 		 */
 		InputStream inputStream;
+		
 		/**
 		 * outputStream
 		 */
 		OutputStream outputStream;
+		
+		
 		/**
 		 * requestText
 		 */
 		String requestText = "";
+		
+		/**
+		 * responseText
+		 */
+		String responseText ="";
 
 		/**
 		 * 
@@ -133,7 +147,7 @@ public class Communicator implements Runnable {
 		 */
 		public void run() {
 			String temp = "";
-			while (!socket.isClosed()) {
+			while (!socket.isClosed()) {				
 				String line = "";
 				BufferedReader bufferReader = new BufferedReader(new InputStreamReader(inputStream));
 				try {
@@ -147,10 +161,9 @@ public class Communicator implements Runnable {
 					isRequestTextLoader = true;
 					if (line != "") {
 						setRequestText(line);
-						System.out.print(line + "\n" + "Request resived!\n");
+						System.out.print(line + "Request resived!\n");
 						line = "";
 					}
-					sendTestResponse("<html><body><h1>Hello World!!!</h1></body></html>");
 				} catch (IOException e) {
 					close();
 				}
@@ -176,14 +189,16 @@ public class Communicator implements Runnable {
 				close();
 			}*/
 			try {
-				String str = "Hello";
-				outputStream.write(str.getBytes());
+				//responseText = "Hello\n\r";
+				outputStream.write(responseText.getBytes());
 				outputStream.flush();
+				this.close();
 			} catch(IOException e)
 			{
 				close();
 			}
 		}
+
 		/**
 		 * 
 		 * @param response - object with response info
@@ -197,13 +212,11 @@ public class Communicator implements Runnable {
 				// TODO Auto-generated catch block
 				e.printStackTrace();
 			}
-			
 		}
-
+		
 		/**
 		 * 
-		 * @param text
-		 *            - request text
+		 * @param text - request text
 		 */
 		public void setRequestText(String text) {
 			requestText = text;
@@ -221,5 +234,10 @@ public class Communicator implements Runnable {
 				}
 			}
 		}
+
+		private Communicator getOuterType() {
+			return Communicator.this;
+		}
+		
 	}
 }

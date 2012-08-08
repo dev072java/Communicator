@@ -1,13 +1,10 @@
 package com.softserveinc.edu.lms.webserver;
 
 import static org.junit.Assert.*;
-
 import java.io.BufferedReader;
 import java.io.BufferedWriter;
 import java.io.IOException;
-import java.io.InputStream;
 import java.io.InputStreamReader;
-import java.io.OutputStream;
 import java.io.OutputStreamWriter;
 import java.net.Socket;
 import org.junit.After;
@@ -15,9 +12,22 @@ import org.junit.Before;
 import org.junit.Test;
 
 public class TestCommunicator {
+	Communicator comm;
+	BufferedReader br;
+	BufferedWriter bw;
+	String str = "Hello";
+	Socket s;
 
 	@Before
 	public void setUp() throws Exception {
+
+		comm = new Communicator();
+		s = new Socket("127.0.0.1", 8091);
+		br = new BufferedReader(new InputStreamReader(s.getInputStream()));
+		bw = new BufferedWriter(new OutputStreamWriter(s.getOutputStream()));
+		Thread thr = new Thread(comm);
+		thr.setDaemon(true);
+		thr.start();
 	}
 
 	@After
@@ -27,32 +37,22 @@ public class TestCommunicator {
 	@Test
 	public void test() {
 		try {
-			InputStream is;
-			OutputStream os;
-			BufferedReader br;
-			BufferedWriter bw;
-			String str = "Hello" + "\r\n" + "Hello" + "\r\n" + "Hello";
-			Communicator comm = new Communicator();
-			Thread thr = new Thread(comm);
-			thr.setDaemon(true);
-			thr.start();
-			Socket s = new Socket("127.0.0.1",1080);
-			is = s.getInputStream();
-			os = s.getOutputStream();
-			br = new BufferedReader(new InputStreamReader(is));
-			bw = new BufferedWriter(new OutputStreamWriter(os));
-			bw.flush();
 			bw.write(str);
+			bw.write("\n\r");
 			bw.flush();
 			String actual = br.readLine();
-			s.close();
 			comm.shutdownServer();
-			assertEquals(str, actual);
+			System.out.print(str);
+			System.out.print(actual);
+			boolean act = false;
+			if(str.equals(actual)) {
+				act = true;
+			}
+			assertEquals(true, act);
+			//s.close();
 		} catch (IOException e) {
 			// TODO Auto-generated catch block
 			e.printStackTrace();
 		}
-		
 	}
-
 }
