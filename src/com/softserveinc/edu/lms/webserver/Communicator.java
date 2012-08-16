@@ -176,7 +176,7 @@ public class Communicator implements Runnable {
 		 *            - response text
 		 */
 		public synchronized void sendTestResponse(String responseText) {
-			/*String response = "HTTP/1.1 200 OK\r\n"
+			String response = "HTTP/1.1 200 OK\r\n"
 					+ "Server: YarServer/2012-07-08\r\n"
 					+ "Content-Type: text/html\r\n" + "Content-Length: "
 					+ responseText.length() + "\r\n"
@@ -187,8 +187,8 @@ public class Communicator implements Runnable {
 				outputStream.flush();
 			} catch (IOException e) {
 				close();
-			}*/
-			try {
+			}
+			/*try {
 				//responseText = "Hello\n\r";
 				outputStream.write(responseText.getBytes());
 				outputStream.flush();
@@ -196,7 +196,7 @@ public class Communicator implements Runnable {
 			} catch(IOException e)
 			{
 				close();
-			}
+			}*/
 		}
 
 		/**
@@ -204,6 +204,16 @@ public class Communicator implements Runnable {
 		 * @param response - object with response info
 		 */
 		public synchronized void sendResponse(Response response)
+		{
+			try {
+				outputStream.write(response.getBytes());
+				outputStream.flush();
+			} catch (IOException e) {
+				// TODO Auto-generated catch block
+				e.printStackTrace();
+			}
+		}
+		public synchronized void sendResponse(String response)
 		{
 			try {
 				outputStream.write(response.getBytes());
@@ -234,10 +244,5 @@ public class Communicator implements Runnable {
 				}
 			}
 		}
-
-		private Communicator getOuterType() {
-			return Communicator.this;
-		}
-		
 	}
 }

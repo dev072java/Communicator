@@ -1,10 +1,8 @@
 package com.softserveinc.edu.lms.webserver;
 
-import com.softserveinc.edu.lms.webserver.Communicator.SocketProcessor;
-
 public class Handler {
 
-	public Response handle(SocketProcessor socket) {
+	public Response handle(Request request) {
 		// TODO Auto-generated method stub
 		return null;
 	}

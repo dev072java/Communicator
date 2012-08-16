@@ -42,8 +42,8 @@ public class TestCommunicator {
 			bw.flush();
 			String actual = br.readLine();
 			comm.shutdownServer();
-			System.out.print(str);
-			System.out.print(actual);
+			System.out.println(str);
+			System.out.println(actual);
 			boolean act = false;
 			if(str.equals(actual)) {
 				act = true;
@@ -52,7 +52,6 @@ public class TestCommunicator {
 			//s.close();
 		} catch (IOException e) {
 			// TODO Auto-generated catch block
-			e.printStackTrace();
 		}
 	}
 }

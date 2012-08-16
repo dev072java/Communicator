@@ -20,17 +20,15 @@ public class TaskQueue implements Runnable {
 					System.out.println(queue.size());
 					socket.isRequestTextLoader = false;
 					Handler handler = new Handler();
-					@SuppressWarnings("unused")
-					Response response = handler.handle(socket);
-					socket.sendTestResponse(socket.requestText);
-					/*
-					 * try { socket.sendResponse(
-					 * "<html><body><h1>Hello World!!!</h1></body></html>");
-					 * socket.bufferWritter.flush();
-					 * System.out.print("Response sent!"); } catch (IOException
-					 * e) { // TODO Auto-generated catch block
-					 * e.printStackTrace(); }
-					 */
+                    RequestBuilder rb = new RequestBuilder(socket.requestText);
+                    Request request = rb.getRequest();
+                    Response response = handler.handle(request);
+                    socket.sendResponse(response);
+					
+					 //socket.sendTestResponse("<HTML><HEAD><META HTTP-EQUIV=\"REFRESH\" CONTENT=\"1; URL=http://www.softtime.ru\"></HEAD><BODY></BODY></HTML>");
+					 socket.close();
+					 System.out.print("Response sent!");
+					 
 				}
 			}
 		}
